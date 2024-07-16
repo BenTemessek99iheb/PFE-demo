@@ -1,0 +1,44 @@
+# Compiled bytecode
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven specific
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Gradle specific
+.gradle/
+build/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Quarkus generated files
+# Dev mode
+dev/
+quarkus-app/
+
+# Quarkus extensions
+quarkus-extension-*
