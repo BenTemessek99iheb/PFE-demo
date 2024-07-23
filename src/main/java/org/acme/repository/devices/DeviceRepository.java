@@ -145,7 +145,8 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
             throw e;
         }
     }
-//FIXME THIS IS NOT GONNA WORK CHECK E JOINTURE BROOO
+
+    //FIXME THIS IS NOT GONNA WORK CHECK E JOINTURE BROOO
     @Transactional
     public List<TotalEnergyConsumptionDto> getTotalEnergyConsumption(Long userId) {
         String query = "SELECT new org.acme.dto.TotalEnergyConsumptionDto(e.energy_L1, e.energy_L2, e.energy_L3, e.energy_L4, e.energy_L5, e.energy_L6, e.energy_L1 + e.energy_L2 + e.energy_L3 + e.energy_L4 + e.energy_L5 + e.energy_L6) " +
@@ -192,7 +193,8 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
         query.setParameter("userId", userId);
         return query.getResultList();
     }
-//FIXME THIS IS NOT GONNA WORK ZEDAAA CHECK JOINTURE
+
+    //FIXME THIS IS NOT GONNA WORK ZEDAAA CHECK JOINTURE
     @Transactional
     public List<PowerFactorDto> getPowerFactorByUserIdAndPeriod(Long userId, Date startDate, Date endDate) {
         String query = "SELECT new org.acme.dto.PowerFactorByUserIdAndPeriodDto(:userId, :startDate, :endDate, AVG(e.active_power / (e.rms_voltage * e.rms_current))) " +
@@ -232,6 +234,7 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
 
         return devices;
     }
+
     @Transactional
     public Long getDeviceByUserId(Long userId) {
         try {
@@ -428,6 +431,7 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
         // Return the result map containing data for all devices
         return resultData;
     }
+
     /********************************************************/
     @Transactional
     public UserData dataByUserIdAndDeviceIds2(Long userId, Map<Long, List<String>> deviceAttributesMap) {
@@ -491,68 +495,68 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
         return userData;
     }
 
-/*******************************/
-@Transactional
-public UserData dataByUserIdAndDeviceIds3(Long userId, List<DeviceAttributeRequest> deviceAttributesList) {
-    UserData userData = new UserData();
-    userData.setUserId(userId);
-    List<DeviceData> devices = new ArrayList<>();
+    /*******************************/
+    @Transactional
+    public UserData dataByUserIdAndDeviceIds3(Long userId, List<DeviceAttributeRequest> deviceAttributesList) {
+        UserData userData = new UserData();
+        userData.setUserId(userId);
+        List<DeviceData> devices = new ArrayList<>();
 
-    for (DeviceAttributeRequest deviceAttributeRequest : deviceAttributesList) {
-        Long deviceId = deviceAttributeRequest.getDeviceId();
-        List<String> attributes = deviceAttributeRequest.getAttributes();
-        EdeviceType deviceType = getDeviceTypeByDeviceId(deviceId);
-        String deviceTypeLowercase = deviceType.name().toLowerCase();
-        String metadataTable;
+        for (DeviceAttributeRequest deviceAttributeRequest : deviceAttributesList) {
+            Long deviceId = deviceAttributeRequest.getDeviceId();
+            List<String> attributes = deviceAttributeRequest.getAttributes();
+            EdeviceType deviceType = getDeviceTypeByDeviceId(deviceId);
+            String deviceTypeLowercase = deviceType.name().toLowerCase();
+            String metadataTable;
 
-        switch (deviceType) {
-            case WaterMeter:
-                metadataTable = "watermetermetadata";
-                break;
-            case ElectricityMeter:
-                metadataTable = "energymetermetadata";
-                break;
-            case THL:
-                metadataTable = "thlmetadata";
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid device type: " + deviceType);
-        }
-
-        String attributesSelect = String.join(", m.", attributes);
-        String queryString = "SELECT m.date, m." + attributesSelect + " FROM " + metadataTable + " m " +
-                "JOIN " + deviceTypeLowercase + " em ON m." + deviceTypeLowercase + "_id = em.id " +
-                "JOIN device d ON em.id = d.id " +
-                "JOIN clientdevice cd ON cd.device_id = d.id " +
-                "WHERE cd.client_id = :userId AND cd.device_id = :deviceId";
-
-        Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("userId", userId);
-        query.setParameter("deviceId", deviceId);
-
-        List<Object[]> results = query.getResultList();
-        List<AttributeData> data = new ArrayList<>();
-
-        for (Object[] result : results) {
-            AttributeData record = new AttributeData();
-            record.setDate((Timestamp) result[0]);
-
-            for (int i = 0; i < attributes.size(); i++) {
-                record.addAttribute(attributes.get(i), result[i + 1]);
+            switch (deviceType) {
+                case WaterMeter:
+                    metadataTable = "watermetermetadata";
+                    break;
+                case ElectricityMeter:
+                    metadataTable = "energymetermetadata";
+                    break;
+                case THL:
+                    metadataTable = "thlmetadata";
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid device type: " + deviceType);
             }
-            data.add(record);
+
+            String attributesSelect = String.join(", m.", attributes);
+            String queryString = "SELECT m.date, m." + attributesSelect + " FROM " + metadataTable + " m " +
+                    "JOIN " + deviceTypeLowercase + " em ON m." + deviceTypeLowercase + "_id = em.id " +
+                    "JOIN device d ON em.id = d.id " +
+                    "JOIN clientdevice cd ON cd.device_id = d.id " +
+                    "WHERE cd.client_id = :userId AND cd.device_id = :deviceId";
+
+            Query query = entityManager.createNativeQuery(queryString);
+            query.setParameter("userId", userId);
+            query.setParameter("deviceId", deviceId);
+
+            List<Object[]> results = query.getResultList();
+            List<AttributeData> data = new ArrayList<>();
+
+            for (Object[] result : results) {
+                AttributeData record = new AttributeData();
+                record.setDate((Timestamp) result[0]);
+
+                for (int i = 0; i < attributes.size(); i++) {
+                    record.addAttribute(attributes.get(i), result[i + 1]);
+                }
+                data.add(record);
+            }
+
+            DeviceData deviceData = new DeviceData();
+            deviceData.setDeviceId(deviceId);
+            deviceData.setDeviceType(deviceType.name());
+            deviceData.setAttributes(data);
+            devices.add(deviceData);
         }
 
-        DeviceData deviceData = new DeviceData();
-        deviceData.setDeviceId(deviceId);
-        deviceData.setDeviceType(deviceType.name());
-        deviceData.setAttributes(data);
-        devices.add(deviceData);
+        userData.setDevices(devices);
+        return userData;
     }
-
-    userData.setDevices(devices);
-    return userData;
-}
 
     @Transactional
     public Map<Long, List<Map<String, Object>>> dataByUserIdAndDevicesIds(Long userId, Map<Long, List<String>> deviceAttributesMap) {
@@ -567,6 +571,7 @@ public UserData dataByUserIdAndDeviceIds3(Long userId, List<DeviceAttributeReque
 
         return resultData;
     }
+
     public List<Map<String, Object>> dataByUserIdAndDeviceId(Long userId, Long deviceId, List<String> attributes) {
         EdeviceType deviceType = getDeviceTypeByDeviceId(deviceId);
         String deviceTypeLowercase = deviceType.name().toLowerCase();
@@ -611,6 +616,7 @@ public UserData dataByUserIdAndDeviceIds3(Long userId, List<DeviceAttributeReque
 
         return data;
     }
+
     //FindAllById
     @Transactional
     public List<Device> findAllById(List<Long> deviceIds) {
@@ -618,6 +624,7 @@ public UserData dataByUserIdAndDeviceIds3(Long userId, List<DeviceAttributeReque
         query.setParameter("deviceIds", deviceIds);
         return query.getResultList();
     }
+
     //getClientIdByDevicesIds
     @Transactional
     public Client getClientIdByDevicesIds(List<Long> deviceIds) {

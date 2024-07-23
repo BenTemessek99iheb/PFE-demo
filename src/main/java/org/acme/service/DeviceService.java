@@ -12,7 +12,10 @@ import org.acme.model.ClientDevice;
 import org.acme.model.MetaData.EnergyMeterMetaData;
 import org.acme.model.MetaData.THLMetaData;
 import org.acme.model.MetaData.WaterMeterMetaData;
-import org.acme.model.devices.*;
+import org.acme.model.devices.Device;
+import org.acme.model.devices.ElectricityMeter;
+import org.acme.model.devices.THL;
+import org.acme.model.devices.WaterMeter;
 import org.acme.repository.ClientDeviceRepo;
 import org.acme.repository.devices.DeviceRepository;
 
@@ -130,7 +133,8 @@ public class DeviceService {
 
         return clientDeviceRepo.getDevicesByUserId(userId);
     }
-    public  List<Device> devicesByUserId(Long userId){
+
+    public List<Device> devicesByUserId(Long userId) {
         return deviceRepo.DevicesByUserId(userId);
     }
 
@@ -167,17 +171,21 @@ public class DeviceService {
             e.printStackTrace();
         }
         return fieldNames;
-        }
+    }
+
     public List<Map<String, Object>> getDataByUserIdAndDeviceIdAndAttributes(Long userId, Long deviceId, List<String> attributes) {
         return deviceRepo.dataByUserIdAndDeviceId(userId, deviceId, attributes);
     }
-    public Map<Long, List<Map<String, Object>>>  dataByUserIdAndDevicesIds(Long userId, Map<Long, List<String>> deviceAttributesMap){
+
+    public Map<Long, List<Map<String, Object>>> dataByUserIdAndDevicesIds(Long userId, Map<Long, List<String>> deviceAttributesMap) {
         return deviceRepo.dataByUserIdAndDeviceIds(userId, deviceAttributesMap);
     }
-/**********************************************/
-public UserData dataByUserIdAndDevicesIds2(Long userId, Map<Long, List<String>> deviceAttributesMap) {
-    return deviceRepo.dataByUserIdAndDeviceIds2(userId, deviceAttributesMap);
-}
+
+    /**********************************************/
+    public UserData dataByUserIdAndDevicesIds2(Long userId, Map<Long, List<String>> deviceAttributesMap) {
+        return deviceRepo.dataByUserIdAndDeviceIds2(userId, deviceAttributesMap);
+    }
+
     public UserData dataByUserIdAndDevicesIds3(Long userId, List<DeviceAttributeRequest> deviceAttributesList) {
         return deviceRepo.dataByUserIdAndDeviceIds3(userId, deviceAttributesList);
     }
@@ -186,10 +194,12 @@ public UserData dataByUserIdAndDevicesIds2(Long userId, Map<Long, List<String>> 
     public List<DeviceEmissionDto> calculateCarbonEmissions(Long userId) {
         return deviceRepo.calculateCarbonEmissions(userId);
     }
+
     public Double getTotalEnergyConsumptionForElectricityMeter(Long userId) {
         return deviceRepo.getTotalEnergyConsumptionForElectricityMeter(userId);
     }
-   // getClientIdByDevicesIds(deviceIds)
+
+    // getClientIdByDevicesIds(deviceIds)
     public Client getClientIdByDevicesIds(List<Long> deviceIds) {
         return deviceRepo.getClientIdByDevicesIds(deviceIds);
     }

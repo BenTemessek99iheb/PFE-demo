@@ -10,7 +10,6 @@ import org.acme.dto.kpis.EnergyPhases;
 import org.acme.dto.kpis.HarmonicDistortionPhases;
 import org.acme.dto.kpis.PowerFactorPhases;
 import org.acme.model.Alert;
-import org.acme.model.Client;
 import org.acme.model.MetaData.EnergyMeterMetaData;
 import org.acme.model.MetaData.THLMetaData;
 import org.acme.model.MetaData.WaterMeterMetaData;
@@ -20,7 +19,10 @@ import org.acme.repository.MetaData.EnergyMeterMetaDataRepository;
 import org.acme.repository.MetaData.ThlMetaDataRepository;
 import org.acme.repository.MetaData.WaterMeterMetaDataRepository;
 import org.acme.repository.devices.DeviceRepository;
+import org.acme.util.tools.Exceptions.AlertNotFoundException;
 import org.acme.util.tools.Exceptions.DeviceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,42 +51,58 @@ public class MetaDataService {
     private static final double ENERGY_COST_PER_KWH = 0.352;
     private static final double WATER_COST_PER_M3 = 0.5; // Example value, update accordingly
     private static final double WATER_EMISSION_FACTOR = 0.0003; // Example value, update accordingly
+    private static final Logger logger = LoggerFactory.getLogger(MetaDataService.class);
 
     @Transactional
     public List<EnergyMeterMetaData> findByDeviceId(Long deviceId) {
-        return energyMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Attempting to find energy meter metadata for device ID: {}", deviceId);
+        List<EnergyMeterMetaData> readings = energyMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Found {} energy meter readings for device ID: {}", readings.size(), deviceId);
+        return readings;
     }
 
     @Transactional
     public List<EnergyMeterMetaData> getEmReadings(Long deviceId) {
-        return energyMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Attempting to get energy meter readings for device ID: {}", deviceId);
+        List<EnergyMeterMetaData> readings = energyMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Retrieved {} energy meter readings for device ID: {}", readings.size(), deviceId);
+        return readings;
     }
 
     @Transactional
     public List<WaterMeterMetaData> getWmReadings(Long deviceId) {
-        return waterMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Attempting to get water meter readings for device ID: {}", deviceId);
+        List<WaterMeterMetaData> readings = waterMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Retrieved {} water meter readings for device ID: {}", readings.size(), deviceId);
+        return readings;
     }
 
     @Transactional
     public void addReading(Long deviceId, EnergyMeterMetaData reading) {
+        logger.info("Attempting to add energy meter reading for device ID: {}", deviceId);
         Device device = deviceRepo.findById(deviceId);
         if (device == null || !(device instanceof ElectricityMeter)) {
+            logger.error("Electricity meter not found with ID: {}", deviceId);
             throw new DeviceNotFoundException("Electricity meter not found with ID: " + deviceId);
         }
         ElectricityMeter electricityMeter = (ElectricityMeter) device;
         reading.setElectricityMeter(electricityMeter);
         energyMeterMetaDataRepository.persist(reading);
+        logger.info("Successfully added energy meter reading for device ID: {}", deviceId);
     }
 
     @Transactional
     public void addWmReading(Long deviceId, WaterMeterMetaData reading) {
+        logger.info("Attempting to add water meter reading for device ID: {}", deviceId);
         Device device = deviceRepo.findById(deviceId);
         if (device == null || !(device instanceof WaterMeter)) {
-            throw new DeviceNotFoundException("Electricity meter not found with ID: " + deviceId);
+            logger.error("Water meter not found with ID: {}", deviceId);
+            throw new DeviceNotFoundException("Water meter not found with ID: " + deviceId);
         }
         WaterMeter waterMeter = (WaterMeter) device;
         reading.setWaterMeter(waterMeter);
         waterMeterMetaDataRepository.persist(reading);
+        logger.info("Successfully added water meter reading for device ID: {}", deviceId);
     }
 
     @Transactional
@@ -100,22 +118,28 @@ public class MetaDataService {
 
     @Transactional
     public DeviceConsumption_cout_carbone calculateConsumption_cout_carbone_em(Long deviceId) {
+        logger.info("Calculating consumption, cost, and carbon footprint for device ID: {}", deviceId);
         Device device = deviceRepo.findById(deviceId);
         if (device == null || !(device instanceof ElectricityMeter)) {
+            logger.error("Electricity meter not found with ID: {}", deviceId);
             throw new DeviceNotFoundException("Electricity meter not found with ID: " + deviceId);
         }
         ElectricityMeter electricityMeter = (ElectricityMeter) device;
         List<EnergyMeterMetaData> readings = energyMeterMetaDataRepository.findByDeviceId(deviceId);
 
         double totalConsumption = calculateTotalConsumption(readings);
+        logger.info("Total consumption for device ID {}: {}", deviceId, totalConsumption);
+
         double energyCost = totalConsumption * ENERGY_COST_PER_KWH;
         double carbonFootprint = totalConsumption * ELECTRICITY_EMISSION_FACTOR;
+        logger.info("Energy cost for device ID {}: {}", deviceId, energyCost);
+        logger.info("Carbon footprint for device ID {}: {}", deviceId, carbonFootprint);
 
         BigDecimal formattedTotalConsumption = BigDecimal.valueOf(totalConsumption).setScale(3, RoundingMode.HALF_UP);
         BigDecimal formattedEnergyCost = BigDecimal.valueOf(energyCost).setScale(3, RoundingMode.HALF_UP);
         BigDecimal formattedCarbonFootprint = BigDecimal.valueOf(carbonFootprint).setScale(3, RoundingMode.HALF_UP);
 
-        return new DeviceConsumption_cout_carbone(
+        DeviceConsumption_cout_carbone result = new DeviceConsumption_cout_carbone(
                 electricityMeter.getName(),
                 electricityMeter.getDeviceType(),
                 electricityMeter.getZone(),
@@ -124,22 +148,49 @@ public class MetaDataService {
                 formattedEnergyCost.doubleValue(),
                 formattedCarbonFootprint.doubleValue() // exprimée en kg CO2e
         );
+
+        logger.info("Calculated DeviceConsumption_cout_carbone for device ID {}: {}", deviceId, result);
+        return result;
     }
 
     private double calculateTotalConsumption(List<EnergyMeterMetaData> readings) {
         double totalConsumption = 0.0;
         for (EnergyMeterMetaData reading : readings) {
-            // Calculate consumption based on current and previous readings
+            logger.debug("Processing reading: {}", reading);
+
+            // Calcul consumption based on current and previous readings
             if (reading.getCurrentReading() != null && reading.getPreviousReading() != null) {
-                totalConsumption += reading.getCurrentReading() - reading.getPreviousReading();
+                double currentConsumption = reading.getCurrentReading() - reading.getPreviousReading();
+                totalConsumption += currentConsumption;
+                logger.debug("Added consumption from current and previous readings: {}", currentConsumption);
             }
-            if (reading.getEstimated_energy_L1() != null) totalConsumption += reading.getEstimated_energy_L1();
-            if (reading.getEstimated_energy_L2() != null) totalConsumption += reading.getEstimated_energy_L2();
-            if (reading.getEstimated_energy_L3() != null) totalConsumption += reading.getEstimated_energy_L3();
-            if (reading.getEstimated_energy_L4() != null) totalConsumption += reading.getEstimated_energy_L4();
-            if (reading.getEstimated_energy_L5() != null) totalConsumption += reading.getEstimated_energy_L5();
-            if (reading.getEstimated_energy_L6() != null) totalConsumption += reading.getEstimated_energy_L6();
+
+            if (reading.getEstimated_energy_L1() != null) {
+                totalConsumption += reading.getEstimated_energy_L1();
+                logger.debug("Added estimated energy L1: {}", reading.getEstimated_energy_L1());
+            }
+            if (reading.getEstimated_energy_L2() != null) {
+                totalConsumption += reading.getEstimated_energy_L2();
+                logger.debug("Added estimated energy L2: {}", reading.getEstimated_energy_L2());
+            }
+            if (reading.getEstimated_energy_L3() != null) {
+                totalConsumption += reading.getEstimated_energy_L3();
+                logger.debug("Added estimated energy L3: {}", reading.getEstimated_energy_L3());
+            }
+            if (reading.getEstimated_energy_L4() != null) {
+                totalConsumption += reading.getEstimated_energy_L4();
+                logger.debug("Added estimated energy L4: {}", reading.getEstimated_energy_L4());
+            }
+            if (reading.getEstimated_energy_L5() != null) {
+                totalConsumption += reading.getEstimated_energy_L5();
+                logger.debug("Added estimated energy L5: {}", reading.getEstimated_energy_L5());
+            }
+            if (reading.getEstimated_energy_L6() != null) {
+                totalConsumption += reading.getEstimated_energy_L6();
+                logger.debug("Added estimated energy L6: {}", reading.getEstimated_energy_L6());
+            }
         }
+        logger.info("Total calculated consumption: {}", totalConsumption);
         return totalConsumption;
     }
 
@@ -366,7 +417,6 @@ public class MetaDataService {
         );
     }
 
-
     //*********************************** EnergyMeter Kpis*****************************************************
 
     public List<EnergyPhases> getEnergyPhasesByDate(Long deviceId, String startDate, String endDate) {
@@ -469,87 +519,26 @@ public class MetaDataService {
                 .collect(Collectors.toList());
     }
 
-    //save Alert by UserId
 
-
-    //saveAlert by UserId and Device Id  on total Consumption Starting from date
-
-/*
-    public Alert scheduleAlertOnEm (Long userId, Alert alert){
-
-        List<Device> devices = deviceRepo.getDevicesByUserId(userId);
-        for (Device device : devices) {
-            if (device instanceof ElectricityMeter) {
-                if (alert.getAttribute()=="totalConsumption"){
-                    checkTotalConsumptionAlert(alert,device.getId())==true{
-                        return alert;
-                    }
-
-                }
-                if (alert.getAttribute()=="activePower"){
-                    checkActivePowerAlert(alert,device.getId())==true;
-                    return alert;
-                }
-                if (alert.getAttribute()=="powerFactor"){
-                    checkPowerFactorAlert(alert,device.getId())==true;
-                    return alert;
-                }
-                else
-                    throw new DeviceNotFoundException("Attribute not found with ID: " + alert.getAttribute());
-
-        }else if (device instanceof WaterMeter) {
-            if (alert.getAttribute()=="totalConsumption"){
-                checkTotalWaterConsumptionAlert(alert,device.getId())==true;
-
-            }
-            if (alert.getAttribute()=="forwardFlow"){
-                checkForwardFlowAlert(alert,device.getId())==true;
-            }
-            else
-                throw new DeviceNotFoundException("Attribute not found with ID: " + alert.getAttribute());
-
-    }else if (device instanceof THL) {
-        if (alert.getAttribute()=="temperature"){
-            checkTemperatureAlert(alert,device.getId())==true;
-        }
-        if (alert.getAttribute()=="humidity"){
-            checkHumidityAlert(alert,device.getId())==true;
-        }
-        if (alert.getAttribute()=="luminosity"){
-            checkLuminosityAlert(alert,device.getId())==true;
-        }
-        else
-            throw new DeviceNotFoundException("Attribute not found with ID: " + alert.getAttribute());
-        }
-            }
-        return alert;
-
-    }*/
-// Method to calculate total energy consumption from Alert.datedebut
-@Transactional
+    // Method to calculate total energy consumption from Alert.datedebut
+    @Transactional
     public double calculateTotalEnergyConsumptionFromStartDate(Long deviceId, String startDate) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-     /*   Date start;
-        try {
-            start = dateFormat.parse(startDate);
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Invalid date format. Please use yyyy-MM-dd.", e);
-        }*/
 
         List<EnergyMeterMetaData> readings = energyMeterMetaDataRepository.findByDeviceId(deviceId);
         double totalConsumption = 0.0;
         for (EnergyMeterMetaData reading : readings) {
-                // Calculate consumption based on current and previous readings
-                if (reading.getCurrentReading() != null && reading.getPreviousReading() != null) {
-                    totalConsumption += reading.getCurrentReading() - reading.getPreviousReading();
-                }
-                if (reading.getEstimated_energy_L1() != null) totalConsumption += reading.getEstimated_energy_L1();
-                if (reading.getEstimated_energy_L2() != null) totalConsumption += reading.getEstimated_energy_L2();
-                if (reading.getEstimated_energy_L3() != null) totalConsumption += reading.getEstimated_energy_L3();
-                if (reading.getEstimated_energy_L4() != null) totalConsumption += reading.getEstimated_energy_L4();
-                if (reading.getEstimated_energy_L5() != null) totalConsumption += reading.getEstimated_energy_L5();
-                if (reading.getEstimated_energy_L6() != null) totalConsumption += reading.getEstimated_energy_L6();
+            // Calculate consumption based on current and previous readings
+            if (reading.getCurrentReading() != null && reading.getPreviousReading() != null) {
+                totalConsumption += reading.getCurrentReading() - reading.getPreviousReading();
             }
+            if (reading.getEstimated_energy_L1() != null) totalConsumption += reading.getEstimated_energy_L1();
+            if (reading.getEstimated_energy_L2() != null) totalConsumption += reading.getEstimated_energy_L2();
+            if (reading.getEstimated_energy_L3() != null) totalConsumption += reading.getEstimated_energy_L3();
+            if (reading.getEstimated_energy_L4() != null) totalConsumption += reading.getEstimated_energy_L4();
+            if (reading.getEstimated_energy_L5() != null) totalConsumption += reading.getEstimated_energy_L5();
+            if (reading.getEstimated_energy_L6() != null) totalConsumption += reading.getEstimated_energy_L6();
+        }
 
         return totalConsumption;
     }
@@ -603,33 +592,42 @@ public class MetaDataService {
 
     // add alert
     public Alert addAlert(Alert alert, Long deviceId) {
+        logger.info("Attempting to add alert for device ID: {}", deviceId);
         Device device = deviceRepo.findById(deviceId);
         if (device == null) {
+            logger.error("Device not found with ID: {}", deviceId);
             throw new DeviceNotFoundException("Device not found with ID: " + deviceId);
         }
         alert.setDevice(device);
-
         alertRepo.persist(alert);
+        logger.info("Successfully added alert for device ID: {}", deviceId);
         return alert;
     }
 
     public Alert updateAlert(Alert alert) {
-    Alert alert1 = alertRepo.findById(alert.getId());
-    alert1.setName(alert.getName());
-    alert1.setDescription(alert.getDescription());
-    alert1.setTag(alert.getTag());
-    alert1.setAttribute(alert.getAttribute());
-    alert1.setDatedebut(alert.getDatedebut());
-    alert1.setValue(alert.getValue());
-    alertRepo.persist(alert1);
-
-    return alert1;
+        logger.info("Attempting to update alert with ID: {}", alert.getId());
+        Alert existingAlert = alertRepo.findById(alert.getId());
+        if (existingAlert == null) {
+            logger.error("Alert not found with ID: {}", alert.getId());
+            throw new AlertNotFoundException("Alert not found with ID: " + alert.getId());
+        }
+        existingAlert.setName(alert.getName());
+        existingAlert.setDescription(alert.getDescription());
+        existingAlert.setTag(alert.getTag());
+        existingAlert.setAttribute(alert.getAttribute());
+        existingAlert.setDatedebut(alert.getDatedebut());
+        existingAlert.setValue(alert.getValue());
+        alertRepo.persist(existingAlert);
+        logger.info("Successfully updated alert with ID: {}", alert.getId());
+        return existingAlert;
     }
 
-    public List<Alert> getAlerts() {
-    AlertRepo alertRepo = new AlertRepo();
-    return alertRepo.listAll();
 
+    public List<Alert> getAlerts() {
+        logger.info("Attempting to retrieve all alerts");
+        List<Alert> alerts = alertRepo.listAll();
+        logger.info("Successfully retrieved {} alerts", alerts.size());
+        return alerts;
     }
 
 
@@ -645,9 +643,10 @@ public class MetaDataService {
         }
         return totalConsumption;
     }
+
     public double calculateTotalWaterFlowFromStartDate(Long deviceId, String startDate) {
 
-           List<WaterMeterMetaData> readings = waterMeterMetaDataRepository.findByDeviceIdAndDateAfter(deviceId, startDate);
+        List<WaterMeterMetaData> readings = waterMeterMetaDataRepository.findByDeviceIdAndDateAfter(deviceId, startDate);
 
         double totalFlow = 0.0;
         for (WaterMeterMetaData reading : readings) {
@@ -655,7 +654,6 @@ public class MetaDataService {
         }
         return totalFlow;
     }
-
 
 
 }
