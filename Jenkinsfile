@@ -13,25 +13,23 @@ pipeline {
                 sh 'mvn clean test'
             }
         }
- stage('SonarQube analysis') {
-    steps {
-            withSonarQubeEnv('Sonar') {
-                script {
-                      withSonarQubeEnv('Sonar') {
-                              sh """
-                                  ./mvnw sonar:sonar \
-                                  -Dsonar.projectKey=ioit \
-                                  -Dsonar.host.url=http://172.16.1.208:9000/ \
-                                  -Dsonar.login=squ_b4673ea432bf65de1c22ad3f6827268d5b084e22
-                              """
+
+        stage('SonarQube analysis') {
+            steps {
+                withSonarQubeEnv('Sonar') {
+                    script {
+                        withSonarQubeEnv('Sonar') {
+                            sh """
+                                ./mvnw sonar:sonar \
+                                -Dsonar.projectKey=ioit \
+                                -Dsonar.host.url=http://172.16.1.208:9000/ \
+                                -Dsonar.login=squ_b4673ea432bf65de1c22ad3f6827268d5b084e22
+                            """
+                        }
                     }
                 }
             }
         }
-
-    
-
-
     }
 
     post {
