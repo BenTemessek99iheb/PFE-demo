@@ -23,7 +23,7 @@ pipeline {
                                 mvn sonar:sonar \
                                 -Dsonar.projectKey=ioit \
                                 -Dsonar.host.url=http://172.16.1.208:9000/ \
-                                -Dsonar.login=squ_b4673ea432bf65de1c22ad3f6827268d5b084e22
+                                -Dsonar.login=sqa_122e87606771a250d5e229d7558d903e9b2bee3d
                             """
                         }
                     }
