@@ -52,7 +52,6 @@ public class GraphiqueController {
             graphiqueService.saveGraphique(request.getGraphique(), request.getDeviceIds());
             return Response.ok().build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error saving graphique: " + e.getMessage())
                     .build();
@@ -67,7 +66,6 @@ public class GraphiqueController {
             List<Graphique> graphiques = graphiqueService.getGraphiqueByClientId(userId);
             return Response.ok(graphiques).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -81,7 +79,6 @@ public class GraphiqueController {
             List<Graphique> graphiques = graphiqueService.getGraphiquesByDevice(deviceId);
             return Response.ok(graphiques).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -93,7 +90,6 @@ public class GraphiqueController {
             List<Graphique> graphiques = graphiqueService.getGraphiquesByUserId(userId);
             return Response.ok(graphiques).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -104,7 +100,6 @@ public class GraphiqueController {
         try {
             return Response.ok(graphiqueService.getGraphiqueTypesByDeviceId(deviceId)).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -116,7 +111,6 @@ public class GraphiqueController {
         try {
             return Response.ok(graphiqueService.GraphiquesAndTypesByUserId(userId)).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -128,7 +122,6 @@ public class GraphiqueController {
             List<Graphique> graphiques = graphiqueService.getGraphiquesByUserId2(userId);
             return Response.ok(graphiques).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -140,7 +133,6 @@ public class GraphiqueController {
             graphiqueService.deleteGraphiqueById(graphiqueId);
             return Response.ok().build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }

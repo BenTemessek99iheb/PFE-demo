@@ -23,11 +23,10 @@ import java.util.logging.Logger;
 @RequestScoped
 @Produces("application/json")
 public class ClientController {
-    private static final Logger LOGGER = Logger.getLogger(GraphiqueController.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ClientController.class.getName());
 
     @Inject
     ClientService clientService;
-
     //add user controller methods here
     @POST
     @Path("/assignEM/{clientId}")
