@@ -21,9 +21,9 @@ pipeline {
                         withSonarQubeEnv('Sonar') {
                             sh """
                                 mvn sonar:sonar \
-                                -Dsonar.projectKey=ioit-dashboard \
+                                -Dsonar.projectKey=ioit \
                                 -Dsonar.host.url=http://172.16.1.208:9000/ \
-                                -Dsonar.login=sqa_b8b0b0b25dfc08bb6c1558ecaed5bcdc10e87cf7
+                                -Dsonar.login=sqp_dcb9e1f5f8e10bef20bd3c53da3338083ba87fd8
 
                             """
                         }
