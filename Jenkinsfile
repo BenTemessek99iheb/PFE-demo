@@ -28,6 +28,25 @@ pipeline {
                 }
             }
         }
+
+        stage('Start Prometheus and Grafana') {
+            steps {
+                script {
+                    // Start Prometheus and Grafana services
+                    sh 'docker-compose up -d prometheus grafana'
+                }
+            }
+        }
+
+        stage('Monitor Application') {
+            steps {
+                script {
+                    // Start the Quarkus application for monitoring
+                    sh 'docker-compose up -d quarkus-app'
+                }
+            }
+        }
+
     }
 
     post {
