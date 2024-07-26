@@ -17,6 +17,13 @@ pipeline {
                 sh 'mvn clean test'
             }
         }
+        stage('List Docker Images') {
+            steps {
+                script {
+                    sh 'docker images'
+                }
+            }
+        }
 
         stage('SonarQube Analysis') {
             steps {
