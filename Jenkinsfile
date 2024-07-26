@@ -19,7 +19,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def mvn = tool 'Default Maven'
+                    def mvn = tool 'Maven 3.9.8'
                     withSonarQubeEnv() {
                         sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=ioit-dashboard -Dsonar.projectName='ioit-dashboard'"
                     }
