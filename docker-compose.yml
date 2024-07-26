@@ -15,6 +15,7 @@ services:
       - sonarqube
       - jenkins
       - postgres
+      - prometheus
 
   sonarqube:
     image: sonarqube:latest
@@ -56,6 +57,24 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    networks:
+      - my-network
+    volumes:
+      - prometheus_config:/etc/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - my-network
+    volumes:
+      - grafana_data:/var/lib/grafana
+
 networks:
   my-network:
     driver: bridge
@@ -67,3 +86,5 @@ volumes:
   sonarqube_bundled-plugins:
   jenkins_home:
   postgres_data:
+  prometheus_config:
+  grafana_data:
