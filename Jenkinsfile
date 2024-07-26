@@ -3,6 +3,10 @@ pipeline {
  tools {
         maven 'Maven 3.9.8'
     }
+
+    environment {
+        SONAR_TOKEN = credentials('sqp_33a45c15a06f12199f4591ad0f4e4a6ad4cf7444') // Use the ID of the SonarQube token credential
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -21,7 +25,7 @@ pipeline {
                 script {
                     def mvn = tool 'Maven 3.9.8'
                     withSonarQubeEnv() {
-                        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=ioit-dashboard -Dsonar.projectName='ioit-dashboard'"
+                        sh "mvn clean verify sonar:sonar -Dsonar.projectKey=ioit-dashboard -Dsonar.projectName='ioit-dashboard'"
                     }
                 }
             }
