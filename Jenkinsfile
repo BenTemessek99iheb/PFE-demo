@@ -17,13 +17,6 @@ pipeline {
                 sh 'mvn clean test'
             }
         }
-        stage('Docker Compose') {
-            steps {
-                script {
-                    sh 'docker images'
-                }
-            }
-        }
 
         stage('SonarQube Analysis') {
             steps {
