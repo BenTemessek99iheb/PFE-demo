@@ -24,7 +24,7 @@ pipeline {
                     def mvn = tool 'Maven 3.9.8'
                     withSonarQubeEnv() {
                         sh "mvn clean verify sonar:sonar " +
-                           "-Dsonar.projectKey=ioit " +
+                           "-Dsonar.projectKey=ioit" +
                            "-Dsonar.projectName='ioit-dashboard' " +
                            "-Dsonar.login='sqp_c4ab2ba3b47fe209977a8b4cab22bf0b48bc4497'"
                     }
