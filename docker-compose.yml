@@ -16,6 +16,7 @@ services:
       - jenkins
       - postgres
       - prometheus
+      - grafana
 
   sonarqube:
     image: sonarqube:latest
