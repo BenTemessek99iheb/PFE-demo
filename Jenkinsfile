@@ -17,7 +17,7 @@ pipeline {
                 sh 'mvn clean test'
             }
         }
-        stage('List Docker Images') {
+        stage('Docker Compose') {
             steps {
                 script {
                     sh 'docker images'
