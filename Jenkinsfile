@@ -14,23 +14,17 @@ pipeline {
             }
         }
 
-        stage('SonarQube analysis') {
-            steps {
-                withSonarQubeEnv('Sonar') {
-                    script {
-                        withSonarQubeEnv('Sonar') {
-                            sh """
-                                mvn sonar:sonar \
-                                -Dsonar.projectKey=ioit-dashboard \
-                                -Dsonar.host.url=http://172.16.1.208:9000/ \
-                                -Dsonar.login=sqp_33a45c15a06f12199f4591ad0f4e4a6ad4cf7444
-
-                            """
-                        }
-                    }
-                }
-            }
-        }
+  node {
+    stage('SCM') {
+      checkout scm
+    }
+    stage('SonarQube Analysis') {
+      def mvn = tool 'Default Maven';
+      withSonarQubeEnv() {
+        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=ioit-dashboard -Dsonar.projectName='ioit-dashboard'"
+      }
+    }
+  }
     }
 
     post {
