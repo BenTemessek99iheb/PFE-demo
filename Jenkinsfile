@@ -26,7 +26,7 @@ pipeline {
                         sh "mvn clean verify sonar:sonar " +
                            "-Dsonar.projectKey=ioit" +
                            "-Dsonar.projectName='ioit-dashboard' " +
-                           "-Dsonar.login='sqp_7e551f36db30ad481004587ae90e855803372c35'"
+                           "-Dsonar.login='sqa_7bcfb12aa4bd988098682fbbbc1832a79532936e'"
                     }
                 }
             }
