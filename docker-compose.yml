@@ -3,7 +3,7 @@ version: '3.8'
 services:
   quarkus-app:
     image: openjdk:17
-    command: sh -c "cd /app && ./mvnw quarkus:dev"
+    command: sh -c "cd /app && ./mvnw compile quarkus:dev"
     working_dir: /app
     volumes:
       - .:/app
