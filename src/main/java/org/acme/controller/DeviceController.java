@@ -296,5 +296,49 @@ public class DeviceController {
                     .build();
         }
     }
+    //calculateTotalEnergyConsumptionForAll
+    @GET
+    @Path("/total-energy-consumption")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getTotalEnergyConsumptionForAllUsers() {
+    try {
+        double totalConsumption = deviceService.calculateTotalEnergyConsumptionForAll();
+        return Response.ok(totalConsumption).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error calculating total Energy consumption for All Users ")
+                .build();
+    }
+    }
+    //calculateCarbonFootprintForAllUsers
+    @GET
+    @Path("/carbon-footprint")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response calculateCarbonFootprintForAllUsers() {
+        try {
+            double totalCarbonFootprint = deviceService.calculateCarbonFootprintForAllUsers();
+            return Response.ok(totalCarbonFootprint).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating total Carbon Footprint for All Users ")
+                    .build();
+        }
+    }
+    //SolarEnergyProduced
+    @GET
+    @Path("/solar-energy-produced")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response SolarEnergyProduced() {
+        try {
+            double totalSolarEnergyProduced = deviceService.SolarEnergyProduced();
+            return Response.ok(totalSolarEnergyProduced).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating total Solar Energy Produced ")
+                    .build();
+        }
+    }
+
+
 
 }

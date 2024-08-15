@@ -9,6 +9,7 @@ import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.acme.dto.*;
 import org.acme.model.Client;
+import org.acme.model.MetaData.EnergyMeterMetaData;
 import org.acme.model.devices.*;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import java.util.*;
 public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
     @PersistenceContext
     EntityManager entityManager;
+
     //TODO ADD THE PERIOD OF CONSUMPTION
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceRepository.class);
 
@@ -633,4 +635,129 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
         return query.getSingleResult();
     }
 
+    //Calculate total energy consumption for all users
+
+    /**********************Admin Dashboard *********************/
+    @Transactional
+    public double calculateTotalEnergyConsumptionForAllUsers() {
+        try {
+            LOGGER.info("Calculating total energy consumption for all users");
+
+            // Récupérer tous les dispositifs d'électricité (ElectricityMeter)
+            TypedQuery<ElectricityMeter> query = entityManager.createQuery(
+                    "SELECT e FROM ElectricityMeter e", ElectricityMeter.class);
+            List<ElectricityMeter> electricityMeters = query.getResultList();
+
+            double totalConsumption = 0.0;
+
+            for (ElectricityMeter meter : electricityMeters) {
+                // Récupérer la dernière lecture pour ce dispositif
+                TypedQuery<EnergyMeterMetaData> latestReadingQuery = entityManager.createQuery(
+                        "SELECT em FROM EnergyMeterMetaData em WHERE em.electricityMeter.id = :deviceId ORDER BY em.date DESC",
+                        EnergyMeterMetaData.class);
+                latestReadingQuery.setParameter("deviceId", meter.getId());
+                latestReadingQuery.setMaxResults(1);
+
+                EnergyMeterMetaData latestReading = null;
+                try {
+                    latestReading = latestReadingQuery.getSingleResult();
+                } catch (jakarta.persistence.NoResultException e) {
+                    LOGGER.warn("No energy meter data found for device ID: {}", meter.getId());
+                    continue; // Skip this meter and continue with the next one
+                }
+
+                // Calculer la consommation totale pour ce dispositif
+                double estimatedEnergy = latestReading.getEnergy_L1() + latestReading.getEnergy_L2() +
+                        latestReading.getEnergy_L3() + latestReading.getEnergy_L4() +
+                        latestReading.getEnergy_L5() + latestReading.getEnergy_L6();
+
+                // Ajouter à la consommation totale
+                totalConsumption += estimatedEnergy;
+            }
+
+            LOGGER.info("Total energy consumption for all users is {}", totalConsumption);
+            return totalConsumption;
+        } catch (Exception e) {
+            LOGGER.error("Error calculating total energy consumption for all users", e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public double calculateCarbonFootprintForAllUsers() {
+        try {
+            LOGGER.info("Calculating carbon footprint for all users");
+
+            // Calculate total energy consumption for all users
+            double totalConsumption = calculateTotalEnergyConsumptionForAllUsers();
+
+            // Calculate the carbon footprint
+            double carbonFootprint = totalConsumption * ELECTRICITY_EMISSION_FACTOR;
+
+            LOGGER.info("Total carbon footprint for all users is {}", carbonFootprint);
+            return carbonFootprint;
+        } catch (Exception e) {
+            LOGGER.error("Error calculating carbon footprint for all users", e);
+            throw e;
+        }
+    }
+
+
+    public double calculateSolarEnergyProduced() {
+
+        try {
+            LOGGER.info("Calculating solar energy produced");
+            TypedQuery<SolarPanel> query = entityManager.createQuery(
+                    "SELECT s FROM SolarPanel s", SolarPanel.class);
+            List<SolarPanel> solarPanels = query.getResultList();
+            double totalEnergyProduced = 0.0;
+            for (SolarPanel solar : solarPanels) {
+                try {
+
+                } catch (Exception e) {
+                    LOGGER.error("Error calculating solar energy produced", e);
+                    throw e;
+                }
+                // Calculate the total energy produced by this solar panel
+                double energyProduced = solar.getEfficiency() * solar.getSurfaceArea() * solar.getSolarIntensity();
+                totalEnergyProduced += energyProduced;
+                LOGGER.info("Energy produced by solar panel {} is {}", solar.getReference(), energyProduced);
+            }
+            LOGGER.info("Total solar energy produced is {}", totalEnergyProduced);
+            return totalEnergyProduced;
+
+        } catch (Exception e) {
+            LOGGER.error("Error calculating solar energy produced", e);
+            throw e;
+        }
+    }
+
+    public double SolarEnergyProduced() {
+
+        try {
+            LOGGER.info("Calculating solar energy produced");
+            TypedQuery<SolarPanel> query = entityManager.createQuery(
+                    "SELECT s FROM SolarPanel s", SolarPanel.class);
+            List<SolarPanel> solarPanels = query.getResultList();
+            double totalEnergyProduced = 0.0;
+            for (SolarPanel solar : solarPanels) {
+                try {
+                    // Calculate the total energy produced by this solar panel
+                    double energyProduced = solar.getEfficiency() * solar.getSurfaceArea() * solar.getSolarIntensity();
+                    totalEnergyProduced += energyProduced;
+                    LOGGER.info("Energy produced by solar panel {} is {}", solar.getReference(), energyProduced);
+                } catch (Exception e) {
+                    LOGGER.error("Error calculating solar energy produced", e);
+                    throw e;
+                }
+
+            }
+            LOGGER.info("Total solar energy produced is {}", totalEnergyProduced);
+            return totalEnergyProduced;
+
+        } catch (Exception e) {
+            LOGGER.error("Error calculating solar energy produced", e);
+            throw e;
+        }
+    }
 }

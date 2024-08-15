@@ -203,7 +203,18 @@ public class DeviceService {
     public Client getClientIdByDevicesIds(List<Long> deviceIds) {
         return deviceRepo.getClientIdByDevicesIds(deviceIds);
     }
-
+    //calculateTotalEnergyConsumptionForAllUsers
+    public double calculateTotalEnergyConsumptionForAll() {
+        return deviceRepo.calculateTotalEnergyConsumptionForAllUsers();
+    }
+    //calculateCarbonFootprintForAllUsers
+    public double calculateCarbonFootprintForAllUsers() {
+        return deviceRepo.calculateCarbonFootprintForAllUsers();
+    }
+    //SolarEnergyProduced
+    public double SolarEnergyProduced() {
+        return deviceRepo.SolarEnergyProduced();
+    }
 
 }
 
