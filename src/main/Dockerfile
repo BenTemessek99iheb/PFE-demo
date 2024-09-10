@@ -94,3 +94,21 @@
 #ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
 #ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
+
+# Use the OpenJDK 17 image as the base
+FROM openjdk:17-jdk-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy the application JAR file to the container
+COPY target/ioit-dashboard.jar /app/ioit-dashboard.jar
+
+# Expose the application's port
+EXPOSE 8081
+
+# Set environment variables
+ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0"
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "/app/ioit-dashboard.jar"]

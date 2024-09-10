@@ -41,7 +41,8 @@ pipeline {
                 stage('Monitor Application') {
                     steps {
                         script {
-                            sh 'docker run -d --name quarkus-app -p 8081:8081 openjdk:17 sh -c "cd /app && ./mvnw quarkus:dev"'
+                    // Monitoring steps if any can be added here.
+                    // The application is already running as part of docker-compose
                         }
                     }
                 }
