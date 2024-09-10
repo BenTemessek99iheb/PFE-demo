@@ -44,7 +44,7 @@ public class AlertScheduler {
     }
 
 
-    @Scheduled(every = "15m")
+   // @Scheduled(every = "15m")
     @Transactional
     public void checkAlerts() {
         Log.info("Checking alerts...");

@@ -3,8 +3,7 @@ package org.acme.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.acme.dto.DeviceConsumption_cout_carbone;
-import org.acme.dto.GreenTotalConsumptionWmEmCo2Sp;
+import org.acme.dto.*;
 import org.acme.dto.kpis.ActivePowerPhases;
 import org.acme.dto.kpis.EnergyPhases;
 import org.acme.dto.kpis.HarmonicDistortionPhases;
@@ -15,6 +14,7 @@ import org.acme.model.MetaData.THLMetaData;
 import org.acme.model.MetaData.WaterMeterMetaData;
 import org.acme.model.devices.*;
 import org.acme.repository.AlertRepo;
+import org.acme.repository.ClientDeviceRepo;
 import org.acme.repository.MetaData.EnergyMeterMetaDataRepository;
 import org.acme.repository.MetaData.ThlMetaDataRepository;
 import org.acme.repository.MetaData.WaterMeterMetaDataRepository;
@@ -28,8 +28,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Transactional
@@ -44,6 +46,8 @@ public class MetaDataService {
     ThlMetaDataRepository thlMetaDataRepository;
     @Inject
     AlertRepo alertRepo;
+    @Inject
+    ClientDeviceRepo clientDeviceRepo;
 
     @Inject
     DeviceRepository deviceRepo;
@@ -73,6 +77,13 @@ public class MetaDataService {
     public List<WaterMeterMetaData> getWmReadings(Long deviceId) {
         logger.info("Attempting to get water meter readings for device ID: {}", deviceId);
         List<WaterMeterMetaData> readings = waterMeterMetaDataRepository.findByDeviceId(deviceId);
+        logger.info("Retrieved {} water meter readings for device ID: {}", readings.size(), deviceId);
+        return readings;
+    }
+    @Transactional
+    public List<THLMetaData> getTHLReadings(Long deviceId) {
+        logger.info("Attempting to get water meter readings for device ID: {}", deviceId);
+        List<THLMetaData> readings = thlMetaDataRepository.findByDeviceId(deviceId);
         logger.info("Retrieved {} water meter readings for device ID: {}", readings.size(), deviceId);
         return readings;
     }
@@ -655,6 +666,298 @@ public class MetaDataService {
         return totalFlow;
     }
 /************************************/
+// Calculate GreenTotalConsumptionWmEmCo2Sp foreach User's Device
+public List<GreenTotalConsumptionWmEmCo2Sp> carbonTracker(Long userId) {
+    List<GreenTotalConsumptionWmEmCo2Sp> totalsList = new ArrayList<>();
+    List<Device> devices = deviceRepo.getDevicesByUserId(userId);
+
+    double totalEnergyProducedBySolarPanels = 0.0;
+    double totalEnergyConsumptionByElectricityMeters = 0.0;
+
+    // First pass: Calculate total solar energy produced and total energy consumed
+    for (Device device : devices) {
+        if (device instanceof SolarPanel) {
+            SolarPanel solarPanel = (SolarPanel) device;
+            totalEnergyProducedBySolarPanels += calculateEnergyProducedBySolarPanel(solarPanel);
+        } else if (device instanceof ElectricityMeter) {
+            ElectricityMeter electricityMeter = (ElectricityMeter) device;
+            totalEnergyConsumptionByElectricityMeters += calculateTotalEnergyConsumption(electricityMeter.getId());
+        }
+    }
+
+    double totalEnergy = totalEnergyProducedBySolarPanels + totalEnergyConsumptionByElectricityMeters;
+
+    // Second pass: Populate totals for each device
+    for (Device device : devices) {
+        GreenTotalConsumptionWmEmCo2Sp totals = new GreenTotalConsumptionWmEmCo2Sp();
+
+        if (device instanceof SolarPanel) {
+            SolarPanel solarPanel = (SolarPanel) device;
+            double energyProducedBySolarPanel = calculateEnergyProducedBySolarPanel(solarPanel);
+            double co2Avoided = energyProducedBySolarPanel * solarPanel.getCo2SavedPerKWh();
+
+            totals.setDevicename(solarPanel.getName());
+            totals.setTotalSolarEnergyProduced(roundToThreeDecimalPlaces(energyProducedBySolarPanel));
+            totals.setTotalCO2Avoided(roundToThreeDecimalPlaces(co2Avoided));
+            totals.setSolarEnergyPercentage(roundToThreeDecimalPlaces(totalEnergy > 0 ? (energyProducedBySolarPanel / totalEnergy) * 100 : 0.0));
+
+            // Fields not applicable to SolarPanel
+            totals.setTotalenergyConsumtion(0.0);
+            totals.setTotalwaterConsumtion(0.0);
+            totals.setTotalco2Emission(0.0);
+        } else if (device instanceof ElectricityMeter) {
+            ElectricityMeter electricityMeter = (ElectricityMeter) device;
+            double energyConsumption = calculateTotalEnergyConsumption(electricityMeter.getId());
+            double co2Emission = energyConsumption * ELECTRICITY_EMISSION_FACTOR;
+            double co2Avoided = calculateTotalCO2Avoided(electricityMeter.getId());
+
+            totals.setDevicename(electricityMeter.getName());
+            totals.setTotalenergyConsumtion(roundToThreeDecimalPlaces(energyConsumption));
+            totals.setTotalco2Emission(roundToThreeDecimalPlaces(co2Emission));
+            totals.setTotalCO2Avoided(roundToThreeDecimalPlaces(co2Avoided));
+            totals.setSolarEnergyPercentage(0.0); // Not applicable to ElectricityMeter
+
+            // Fields not applicable to ElectricityMeter
+            totals.setTotalwaterConsumtion(0.0);
+            totals.setTotalSolarEnergyProduced(0.0);
+        } else if (device instanceof WaterMeter) {
+            WaterMeter waterMeter = (WaterMeter) device;
+            double waterConsumption = calculateTotalWaterConsumption(waterMeter.getId());
+            double co2Avoided = calculateTotalCO2Avoided(waterMeter.getId());
+
+            totals.setDevicename(waterMeter.getName());
+            totals.setTotalwaterConsumtion(roundToThreeDecimalPlaces(waterConsumption));
+            totals.setTotalCO2Avoided(roundToThreeDecimalPlaces(co2Avoided));
+
+            // Fields not applicable to WaterMeter
+            totals.setTotalenergyConsumtion(0.0);
+            totals.setTotalSolarEnergyProduced(0.0);
+            totals.setSolarEnergyPercentage(0.0);
+            totals.setTotalco2Emission(0.0);
+        } else {
+            logger.warn("Unknown device type for device ID: {}", device.getId());
+            continue;
+        }
+
+        totalsList.add(totals);
+    }
+
+    return totalsList;
+}
+
+    @Transactional
+    public List<EnergyQuality> getEnergyQuality(Long userId) {
+        List<EnergyMeterMetaData> readings = energyMeterMetaDataRepository.getEnergyMeterMetaDataByUserId(userId);
+        logger.info("Attempting to get energy meter readings for user ID: {}", userId);
+
+        Map<ElectricityMeter, List<EnergyMeterMetaData>> readingsByMeter = readings.stream()
+                .collect(Collectors.groupingBy(EnergyMeterMetaData::getElectricityMeter));
+
+        List<EnergyQuality> energyQualities = new ArrayList<>();
+
+        for (Map.Entry<ElectricityMeter, List<EnergyMeterMetaData>> entry : readingsByMeter.entrySet()) {
+            ElectricityMeter meter = entry.getKey();
+            List<EnergyMeterMetaData> meterReadings = entry.getValue();
+
+            EnergyQuality energyQuality = new EnergyQuality();
+            List<Float> energyReadings = new ArrayList<>();
+            double totalEnergy = 0;
+            double totalPowerFactor = 0;
+            double totalHarmonicDistortion = 0;
+            double totalRms = 0;
+            double totalReactivePower = 0;
+
+            double minEnergy = Double.MAX_VALUE;
+            double maxEnergy = Double.MIN_VALUE;
+            double minPowerFactor = Double.MAX_VALUE;
+            double maxPowerFactor = Double.MIN_VALUE;
+            double minHarmonicDistortion = Double.MAX_VALUE;
+            double maxHarmonicDistortion = Double.MIN_VALUE;
+            double minRms = Double.MAX_VALUE;
+            double maxRms = Double.MIN_VALUE;
+            double minReactivePower = Double.MAX_VALUE;
+            double maxReactivePower = Double.MIN_VALUE;
+
+            for (EnergyMeterMetaData reading : meterReadings) {
+                energyReadings.add(reading.getCurrentReading().floatValue());
+
+                // Calculate energy for all phases
+                double energy = reading.getEnergy_L1() + reading.getEnergy_L2() + reading.getEnergy_L3()
+                        + reading.getEnergy_L4() + reading.getEnergy_L5() + reading.getEnergy_L6();
+                totalEnergy += energy;
+
+                minEnergy = Math.min(minEnergy, energy);
+                maxEnergy = Math.max(maxEnergy, energy);
+
+                // Calculate power factor for all phases
+                double powerFactor = (reading.getPower_factor_L1() + reading.getPower_factor_L2() + reading.getPower_factor_L3()
+                        + reading.getPower_factor_L4() + reading.getPower_factor_L5() + reading.getPower_factor_L6()) / 6;
+                totalPowerFactor += powerFactor;
+
+                minPowerFactor = Math.min(minPowerFactor, powerFactor);
+                maxPowerFactor = Math.max(maxPowerFactor, powerFactor);
+
+                // Calculate total harmonic distortion for all phases
+                double harmonicDistortion = (reading.getTotal_harmonic_distortion_L1() + reading.getTotal_harmonic_distortion_L2() + reading.getTotal_harmonic_distortion_L3()
+                        + reading.getTotal_harmonic_distortion_L4() + reading.getTotal_harmonic_distortion_L5() + reading.getTotal_harmonic_distortion_L6()) / 6;
+                totalHarmonicDistortion += harmonicDistortion;
+
+                minHarmonicDistortion = Math.min(minHarmonicDistortion, harmonicDistortion);
+                maxHarmonicDistortion = Math.max(maxHarmonicDistortion, harmonicDistortion);
+
+                // Calculate RMS for all phases (current and voltage)
+                double rms = (reading.getRms_current_L1() + reading.getRms_current_L2() + reading.getRms_current_L3()
+                        + reading.getRms_voltage_L1() + reading.getRms_voltage_L2() + reading.getRms_voltage_L3()) / 6;
+                totalRms += rms;
+
+                minRms = Math.min(minRms, rms);
+                maxRms = Math.max(maxRms, rms);
+
+                // Calculate reactive power for all phases (if applicable)
+                double reactivePower = (reading.getReactive_energy_hour_L1() + reading.getReactive_energy_hour_L2() + reading.getReactive_energy_hour_L3()
+                        + reading.getReactive_energy_day_L1() + reading.getReactive_energy_day_L2() + reading.getReactive_energy_day_L3()
+                        + reading.getReactive_energy_month_L1() + reading.getReactive_energy_month_L2() + reading.getReactive_energy_month_L3()) / 9;
+                totalReactivePower += reactivePower;
+
+                minReactivePower = Math.min(minReactivePower, reactivePower);
+                maxReactivePower = Math.max(maxReactivePower, reactivePower);
+            }
+
+            int count = meterReadings.size();
+
+            // Set energy quality values
+            energyQuality.deviceName = meter.getName(); // The device name for the current meter
+            energyQuality.energyReadings = energyReadings;
+            energyQuality.avgEnergyPhases = roundToThreeDecimalPlaces(totalEnergy / count);
+            energyQuality.avgPowerFactor = roundToThreeDecimalPlaces(totalPowerFactor / count);
+            energyQuality.avgTotalHarmonicDistortion = roundToThreeDecimalPlaces(totalHarmonicDistortion / count);
+            energyQuality.avgRms = roundToThreeDecimalPlaces(totalRms / count);
+            energyQuality.minReactivePower = roundToThreeDecimalPlaces(minReactivePower);
+            energyQuality.minEnergyPhases = roundToThreeDecimalPlaces(minEnergy);
+            energyQuality.minPowerFactor = roundToThreeDecimalPlaces(minPowerFactor);
+            energyQuality.minTotalHarmonicDistortion = roundToThreeDecimalPlaces(minHarmonicDistortion);
+            energyQuality.minRms = roundToThreeDecimalPlaces(minRms);
+            energyQuality.maxReactivePower = roundToThreeDecimalPlaces(maxReactivePower);
+            energyQuality.maxEnergyPhases = roundToThreeDecimalPlaces(maxEnergy);
+            energyQuality.maxPowerFactor = roundToThreeDecimalPlaces(maxPowerFactor);
+            energyQuality.maxTotalHarmonicDistortion = roundToThreeDecimalPlaces(maxHarmonicDistortion);
+            energyQuality.maxRms = roundToThreeDecimalPlaces(maxRms);
+            energyQuality.energyStandardDeviation = roundToThreeDecimalPlaces(calculateEnergyStandardDeviation(energyReadings, energyQuality.avgEnergyPhases));
+
+            energyQualities.add(energyQuality);
+        }
+
+        return energyQualities;
+    }
+
+
+    private double calculateEnergyStandardDeviation(List<Float> energyReadings, double avgEnergyPhases) {
+        double variance = 0;
+        for (Float energy : energyReadings) {
+            variance += Math.pow(energy - avgEnergyPhases, 2);
+        }
+        variance /= energyReadings.size();
+        return Math.sqrt(variance);
+    }
+
+
+    private Double calculateAverage(List<? extends Number> values) {
+        return values.stream()
+                .mapToDouble(Number::doubleValue)
+                .average()
+                .orElse(0.0);
+    }
+
+    public List<ThlData> getListOfthlReadings(Long userId){
+        List<THLMetaData> readings = thlMetaDataRepository.getTHLMetaDataByUserId(userId);
+        List<ThlData> thlDataList = new ArrayList<>();
+        for (THLMetaData reading : readings) {
+            ThlData thlData = new ThlData();
+            thlData.setTemperature(reading.getTemperature());
+            thlData.setHumidity(reading.getHumidity());
+            thlData.setLuminosity(reading.getLight());
+            thlData.setDeviceName(reading.getThl().getName());
+            thlData.setDate(reading.getDate());
+
+            thlDataList.add(thlData);
+        }
+
+        return thlDataList;
+    }
+    public List<ThlDataPercentage> calculateThlDataPercentage(Long userId) {
+        List<ThlData> thlDataList = getListOfthlReadings(userId);
+        List<ThlDataPercentage> thlDataPercentageList = new ArrayList<>();
+
+        double sumTemp = 0.0;
+        double sumHum = 0.0;
+        double sumLum = 0.0;
+
+        // Calculate total sums for temperature, humidity, and luminosity
+        for (ThlData thlData : thlDataList) {
+            sumTemp += thlData.getTemperature();
+            sumHum += thlData.getHumidity();
+            sumLum += thlData.getLuminosity();
+        }
+
+        // Calculate percentages and populate ThlDataPercentage objects
+        for (ThlData thlData : thlDataList) {
+            ThlDataPercentage thlDataPercentage = new ThlDataPercentage();
+            thlDataPercentage.setDeviceName(thlData.getDeviceName());
+            thlDataPercentage.setDate(thlData.getDate());
+
+            if (sumTemp != 0) {
+                thlDataPercentage.setPercentageTemperature((thlData.getTemperature() * 100) / sumTemp);
+            } else {
+                thlDataPercentage.setPercentageTemperature(0.0);
+            }
+
+            if (sumHum != 0) {
+                thlDataPercentage.setPercentageHumidity((thlData.getHumidity() * 100) / sumHum);
+            } else {
+                thlDataPercentage.setPercentageHumidity(0.0);
+            }
+
+            if (sumLum != 0) {
+                thlDataPercentage.setPercentageLight((thlData.getLuminosity() * 100) / sumLum);
+            } else {
+                thlDataPercentage.setPercentageLight(0.0);
+            }
+
+            thlDataPercentageList.add(thlDataPercentage);
+        }
+
+        return thlDataPercentageList;
+    }
+    public THLavg calculateAverageTHL(Long userId) {
+        List<ThlData> thlDataList = getListOfthlReadings(userId);
+        int nbthl = thlMetaDataRepository.countTHLByUserId(userId)  ;
+
+
+        double sumTemp = 0.0;
+        double sumHum = 0.0;
+        double sumLum = 0.0;
+        int count = thlDataList.size();
+
+        // Calculate total sums for temperature, humidity, and luminosity
+        for (ThlData thlData : thlDataList) {
+            sumTemp += thlData.getTemperature();
+            sumHum += thlData.getHumidity();
+            sumLum += thlData.getLuminosity();
+        }
+
+        // Calculate averages
+        double avgTemp = (count != 0) ? (sumTemp / count) : 0.0;
+        double avgHum = (count != 0) ? (sumHum / count) : 0.0;
+        double avgLum = (count != 0) ? (sumLum / count) : 0.0;
+
+        // Round to 3 decimal places
+        avgTemp = roundToThreeDecimalPlaces(avgTemp);
+        avgHum = roundToThreeDecimalPlaces(avgHum);
+        avgLum = roundToThreeDecimalPlaces(avgLum);
+
+        // Create and return THLavg object
+        return new THLavg(avgTemp, avgHum, avgLum, nbthl);
+    }
 
 
 }

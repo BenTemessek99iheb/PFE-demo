@@ -212,10 +212,26 @@ public class DeviceService {
         return deviceRepo.calculateCarbonFootprintForAllUsers();
     }
     //SolarEnergyProduced
-    public double SolarEnergyProduced() {
-        return deviceRepo.SolarEnergyProduced();
+    public double solarEnergyProduced() {
+        return deviceRepo.solarEnergyProduced();
     }
+    public double solarenergypercentage() {
 
+        double totalEnergyConsumption = deviceRepo.calculateTotalEnergyConsumptionForAllUsers();
+        double solarEnergyProduced = deviceRepo.solarEnergyProduced();
+        return (solarEnergyProduced / totalEnergyConsumption) * 100;
+    }
+    //electricityConsumtionEveryMonthForAllUsers
+    public List<ConsumptionDates> electricityConsumtionByDateForAllUsers() {
+        return deviceRepo.electricityConsumptionByDateForAll();
+    }
+    //carbonFootprintForAllUsersEveryMonth
+
+
+    //count EnergyMeters
+    public DeviceCountDto countDevicesByType() {
+        return deviceRepo.countDevicesByType();
+    }
 }
 
 
