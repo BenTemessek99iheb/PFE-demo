@@ -2,10 +2,7 @@ package org.acme.controller;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
@@ -107,6 +104,65 @@ public class ClientController {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
-
+    //findUserById
+    @GET
+    @Path("/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response findUserById(@PathParam("userId") Long userId) {
+        try {
+            Client client = clientService.findUserById(userId);
+            if (client == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
+            }
+            return Response.ok(client).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+    //getAllClients
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getAllClients() {
+        try {
+            return Response.ok(clientService.getAllClients()).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+    //getClientsWithDevices
+    @GET
+    @Path("/clientsWithDevices")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getClientsWithDevices() {
+        try {
+            return Response.ok(clientService.getClientsWithDevices()).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+    //deleteClientAndDevice
+    @DELETE
+    @Path("/{clientId}/{deviceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteClientAndDevice(@PathParam("clientId") Long clientId,
+                                          @PathParam("deviceId") Long deviceId) {
+        try {
+            clientService.deleteClientAndDevice(clientId, deviceId);
+            return Response.ok().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+    @DELETE
+    @Path("/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteUser(@PathParam("userId") Long userId) {
+        try {
+            clientService.deleteUser(userId);
+            return Response.ok().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
 
 }

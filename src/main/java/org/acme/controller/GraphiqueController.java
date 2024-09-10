@@ -21,28 +21,6 @@ public class GraphiqueController {
     GraphiqueService graphiqueService;
     //basic bar + column chart
 
-
-    /*    @POST
-        @Path("/graphique_wizard")
-        @Consumes(MediaType.APPLICATION_JSON)
-        @Produces(MediaType.APPLICATION_JSON)
-        public Response saveGraphique(Graphique request) {
-            try {
-                Graphique lineChart = request.getLineChart();
-                List<Long> deviceIds = request.getDevices();
-
-                System.out.println("Received LineChart: " + lineChart);
-                System.out.println("Received Device IDs: " + deviceIds);
-
-                graphiqueService.saveGraphique(lineChart, deviceIds);
-
-                return Response.ok(lineChart).build();
-            } catch (Exception e) {
-                e.printStackTrace();
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            }
-
-        }*/
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)

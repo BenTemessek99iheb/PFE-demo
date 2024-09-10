@@ -296,20 +296,22 @@ public class DeviceController {
                     .build();
         }
     }
+
     //calculateTotalEnergyConsumptionForAll
     @GET
     @Path("/total-energy-consumption")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTotalEnergyConsumptionForAllUsers() {
-    try {
-        double totalConsumption = deviceService.calculateTotalEnergyConsumptionForAll();
-        return Response.ok(totalConsumption).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Error calculating total Energy consumption for All Users ")
-                .build();
+        try {
+            double totalConsumption = deviceService.calculateTotalEnergyConsumptionForAll();
+            return Response.ok(totalConsumption).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating total Energy consumption for All Users ")
+                    .build();
+        }
     }
-    }
+
     //calculateCarbonFootprintForAllUsers
     @GET
     @Path("/carbon-footprint")
@@ -324,13 +326,14 @@ public class DeviceController {
                     .build();
         }
     }
+
     //SolarEnergyProduced
     @GET
     @Path("/solar-energy-produced")
     @Produces(MediaType.APPLICATION_JSON)
     public Response SolarEnergyProduced() {
         try {
-            double totalSolarEnergyProduced = deviceService.SolarEnergyProduced();
+            double totalSolarEnergyProduced = deviceService.solarEnergyProduced();
             return Response.ok(totalSolarEnergyProduced).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -339,6 +342,63 @@ public class DeviceController {
         }
     }
 
+    //solarenergypercentage
+    @GET
+    @Path("/solar-energy-percentage")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response solarenergypercentage() {
+        try {
+            double solarenergypercentage = deviceService.solarenergypercentage();
+            return Response.ok(solarenergypercentage).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating total Solar Energy Produced ")
+                    .build();
+        }
 
+    }
+
+    //electricityConsumtionEveryMonthForAllUsers
+    @GET
+    @Path("/electricity-consumption-By-date")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response electricityConsumtionByDateForAllUsers() {
+        try {
+            List<ConsumptionDates> consumptionDates = deviceService.electricityConsumtionByDateForAllUsers();
+            return Response.ok(consumptionDates).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating Electricity Consumption Every Month For All Users ")
+                    .build();
+        }
+    }
+
+    //Delete Device
+    @DELETE
+    @Path("/{deviceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteDevice(@PathParam("deviceId") Long deviceId) {
+        try {
+            deviceService.delete(deviceId);
+            return Response.ok().build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    //countDevicesByType
+    @GET
+    @Path("/countDevicesByType")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response countDevicesByType() {
+        try {
+            DeviceCountDto deviceCount = deviceService.countDevicesByType();
+            return Response.ok(deviceCount).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error calculating total Solar Energy Produced ")
+                    .build();
+        }
+    }
 
 }

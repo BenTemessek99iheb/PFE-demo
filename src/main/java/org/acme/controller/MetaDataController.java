@@ -247,5 +247,100 @@ public class MetaDataController {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
     }
+    @GET
+    @Path("/device/{deviceId}/download")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadDeviceReadings(@PathParam("deviceId") Long deviceId) {
+        List<EnergyMeterMetaData> readings = metaDataService.findByDeviceId(deviceId);
+
+        String csvContent = convertReadingsToCSV(readings);
+
+        return Response.ok(csvContent)
+                .header("Content-Disposition", "attachment; filename=\"readings.csv\"")
+                .build();
+    }
+
+    private String convertReadingsToCSV(List<EnergyMeterMetaData> readings) {
+        StringBuilder csvBuilder = new StringBuilder();
+        csvBuilder.append("Date,CurrentReading,PreviousReading,Estimated_energy_L1,Estimated_energy_L2,Estimated_energy_L3,Estimated_energy_L4,Estimated_energy_L5,Energy_L2,Energy_L3,Energy_L4,Energy_L5,Energy_L6,Reactive_energy_day_L1,Reactive_energy_day_L2,Reactive_energy_day_L3,Active_power_L1,Active_power_L2,Active_power_L3,Rms_current_L1,Rms_current_L2,Rms_current_L3,Rms_voltage_L1,Rms_voltage_L2,Rms_voltage_L3,Power_factor_L1,Power_factor_L2,Power_factor_L3,Battery_level,Rssi,Snr,Ctr \n");
+
+        for (EnergyMeterMetaData reading : readings) {
+            csvBuilder.append(reading.getDate()).append(",");
+            csvBuilder.append(reading.getCurrentReading()).append(",");
+            csvBuilder.append(reading.getPreviousReading()).append(",");
+            csvBuilder.append(reading.getEstimated_energy_L1()).append(",");
+            csvBuilder.append(reading.getEstimated_energy_L2()).append(",");
+            csvBuilder.append(reading.getEstimated_energy_L3()).append(",");
+            csvBuilder.append(reading.getEstimated_energy_L4()).append(",");
+            csvBuilder.append(reading.getEstimated_energy_L5()).append(",");
+            csvBuilder.append(reading.getEnergy_L2()).append(",");
+            csvBuilder.append(reading.getEnergy_L3()).append(",");
+            csvBuilder.append(reading.getEnergy_L4()).append(",");
+            csvBuilder.append(reading.getEnergy_L5()).append(",");
+            csvBuilder.append(reading.getEnergy_L6()).append(",");
+            csvBuilder.append(reading.getReactive_energy_day_L1()).append(",");
+            csvBuilder.append(reading.getReactive_energy_day_L2()).append(",");
+            csvBuilder.append(reading.getReactive_energy_day_L3()).append(",");
+
+            csvBuilder.append(reading.getActive_power_L1()).append(",");
+            csvBuilder.append(reading.getActive_power_L2()).append(",");
+            csvBuilder.append(reading.getActive_power_L3()).append(",");
+            csvBuilder.append(reading.getRms_current_L1()).append(",");
+            csvBuilder.append(reading.getRms_current_L2()).append(",");
+            csvBuilder.append(reading.getRms_current_L3()).append(",");
+            csvBuilder.append(reading.getRms_voltage_L1()).append(",");
+            csvBuilder.append(reading.getRms_voltage_L2()).append(",");
+            csvBuilder.append(reading.getRms_voltage_L3()).append(",");
+            csvBuilder.append(reading.getPower_factor_L1()).append(",");
+            csvBuilder.append(reading.getPower_factor_L2()).append(",");
+            csvBuilder.append(reading.getPower_factor_L3()).append(",");
+            csvBuilder.append(reading.getBattery_level()).append(",");
+            csvBuilder.append(reading.getRssi()).append(",");
+            csvBuilder.append(reading.getSnr()).append(",");
+            csvBuilder.append(reading.getCtr()).append(",");
+
+            csvBuilder.append("\n");
+        }
+
+        return csvBuilder.toString();
+    }
+//carbonTracker
+    @GET
+    @Path("/carbonTracker/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response carbonTracker(@PathParam("userId") Long userId) {
+        logger.info("Received request to calculate carbon tracker for user ID: {}", userId);
+        return Response.ok(metaDataService.carbonTracker(userId)).build();
+    }
+    //getEnergyQuality
+    @GET
+    @Path("/energyQuality/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getEnergyQuality(@PathParam("userId") Long userId) {
+        logger.info("Received request to calculate energy quality for user ID: {}", userId);
+        return Response.ok(metaDataService.getEnergyQuality(userId)).build();
+    }
+    //getListOfthlReadings
+    @GET
+    @Path("/getListOfthlReadings/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getListOfthlData(@PathParam("userId") Long userId) {
+        logger.info("Received request to get list of THL readings for user ID: {}", userId);
+        return Response.ok(metaDataService.getListOfthlReadings(userId)).build();
+    }
+    @GET
+    @Path("/thlDataPercentage/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response calculateThlDataPercentage(@PathParam("userId") Long userId) {
+        logger.info("Received request to get list of THL readings for user ID: {}", userId);
+        return Response.ok(metaDataService.calculateThlDataPercentage(userId)).build();
+    }
+    @GET
+    @Path("/getThlAvgByUserId/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getThlAvgByUserId(@PathParam("userId") Long userId) {
+        logger.info("Received request to get THL average for user ID: {}", userId);
+        return Response.ok(metaDataService.calculateAverageTHL(userId)).build();
+    }
 
 }
