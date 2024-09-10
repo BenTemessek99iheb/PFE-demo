@@ -9,8 +9,10 @@ import org.acme.dto.kpis.EnergyPhases;
 import org.acme.dto.kpis.HarmonicDistortionPhases;
 import org.acme.dto.kpis.PowerFactorPhases;
 import org.acme.model.MetaData.EnergyMeterMetaData;
+import org.acme.model.MetaData.THLMetaData;
 import org.acme.model.devices.Device;
 import org.acme.model.devices.ElectricityMeter;
+import org.acme.model.devices.THL;
 import org.acme.repository.ClientDeviceRepo;
 
 import java.text.ParseException;
@@ -24,6 +26,7 @@ public class EnergyMeterMetaDataRepository implements PanacheRepositoryBase<Ener
 
     @Inject
     ClientDeviceRepo clientDeviceRepo;
+
 
     @Transactional
     public List<EnergyMeterMetaData> findByDeviceId(Long deviceId) {
@@ -267,6 +270,7 @@ public class EnergyMeterMetaDataRepository implements PanacheRepositoryBase<Ener
         }
         return allMetaData;
     }
+
     //countEnergyMetersByUserId
 
     public int countEnergyMetersByUserId(Long userId) {
@@ -291,4 +295,10 @@ public class EnergyMeterMetaDataRepository implements PanacheRepositoryBase<Ener
 
         return find("electricityMeter.id = ?1 and date >= ?2", deviceId, date).list();
     }
+
+    /*********************************Data For Dashboard Admin ********************************/
+    // get all Consumtion for all EnergyMeters
+
+
+
 }

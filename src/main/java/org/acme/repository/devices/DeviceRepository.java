@@ -28,6 +28,7 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceRepository.class);
 
     private static final double ELECTRICITY_EMISSION_FACTOR = 0.58;
+    private static final double ELECTRICITY_COST = 0.181 ;
     private static final double WATER_EMISSION_FACTOR = 0.2;
 
     public List<Device> getDevicesByUserId(Long userId) {
@@ -318,7 +319,7 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
         return EdeviceType.values()[deviceTypeValue.intValue()]; // Assuming your enum starts from 1
     }
 
-    @Transactional
+ /*   @Transactional
     public List<Map<String, Object>> loulaaadataByUserIdAndDeviceId(Long userId, Long deviceId, List<String> attributes) {
         // Determine device type based on deviceId
         EdeviceType deviceType = getDeviceTypeByDeviceId(deviceId);
@@ -366,7 +367,7 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
 
         return data;
     }
-
+*/
     @Transactional
     public Map<Long, List<Map<String, Object>>> dataByUserIdAndDeviceIds(Long userId, Map<Long, List<String>> deviceAttributesMap) {
         // Initialize a map to hold the results for each device
@@ -703,36 +704,8 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
     }
 
 
-    public double calculateSolarEnergyProduced() {
 
-        try {
-            LOGGER.info("Calculating solar energy produced");
-            TypedQuery<SolarPanel> query = entityManager.createQuery(
-                    "SELECT s FROM SolarPanel s", SolarPanel.class);
-            List<SolarPanel> solarPanels = query.getResultList();
-            double totalEnergyProduced = 0.0;
-            for (SolarPanel solar : solarPanels) {
-                try {
-
-                } catch (Exception e) {
-                    LOGGER.error("Error calculating solar energy produced", e);
-                    throw e;
-                }
-                // Calculate the total energy produced by this solar panel
-                double energyProduced = solar.getEfficiency() * solar.getSurfaceArea() * solar.getSolarIntensity();
-                totalEnergyProduced += energyProduced;
-                LOGGER.info("Energy produced by solar panel {} is {}", solar.getReference(), energyProduced);
-            }
-            LOGGER.info("Total solar energy produced is {}", totalEnergyProduced);
-            return totalEnergyProduced;
-
-        } catch (Exception e) {
-            LOGGER.error("Error calculating solar energy produced", e);
-            throw e;
-        }
-    }
-
-    public double SolarEnergyProduced() {
+    public double solarEnergyProduced() {
 
         try {
             LOGGER.info("Calculating solar energy produced");
@@ -757,6 +730,92 @@ public class DeviceRepository implements PanacheRepositoryBase<Device, Long> {
 
         } catch (Exception e) {
             LOGGER.error("Error calculating solar energy produced", e);
+            throw e;
+        }
+    }
+
+
+    @Transactional
+    public List<ConsumptionDates> electricityConsumptionByDateForAll() {
+        try {
+            LOGGER.info("Calculating electricity consumption for all users");
+
+            // Query to fetch all ElectricityMeters
+            TypedQuery<ElectricityMeter> query = entityManager.createQuery(
+                    "SELECT e FROM ElectricityMeter e", ElectricityMeter.class);
+            List<ElectricityMeter> electricityMeters = query.getResultList();
+
+            // List to store electricity consumption with their dates
+            List<ConsumptionDates> electricityConsumptionList = new ArrayList<>();
+
+            for (ElectricityMeter meter : electricityMeters) {
+                // Query to fetch the latest reading for each meter
+                TypedQuery<EnergyMeterMetaData> latestReadingQuery = entityManager.createQuery(
+                        "SELECT em FROM EnergyMeterMetaData em WHERE em.electricityMeter.id = :deviceId ORDER BY em.date DESC",
+                        EnergyMeterMetaData.class);
+                latestReadingQuery.setParameter("deviceId", meter.getId());
+                latestReadingQuery.setMaxResults(1);
+
+                EnergyMeterMetaData latestReading = null;
+                try {
+                    latestReading = latestReadingQuery.getSingleResult();
+                } catch (jakarta.persistence.NoResultException e) {
+                    LOGGER.warn("No energy meter data found for device ID: {}", meter.getId());
+                    continue;
+                }
+
+                // Calculate the estimated energy
+                double estimatedEnergy = latestReading.getEnergy_L1() + latestReading.getEnergy_L2() +
+                        latestReading.getEnergy_L3() + latestReading.getEnergy_L4() +
+                        latestReading.getEnergy_L5() + latestReading.getEnergy_L6();
+
+                // Create a new DTO and set the electricity consumption and date
+                ConsumptionDates consumptionDate = new ConsumptionDates();
+                consumptionDate.setConsumption(estimatedEnergy);
+                consumptionDate.setCarbonFootprint(estimatedEnergy * ELECTRICITY_EMISSION_FACTOR );
+                consumptionDate.setCost(estimatedEnergy * ELECTRICITY_COST);
+
+
+                consumptionDate.setDate(latestReading.getDate());
+
+                // Add the DTO to the list
+                electricityConsumptionList.add(consumptionDate);
+            }
+
+            return electricityConsumptionList;
+        } catch (Exception e) {
+            LOGGER.error("Error calculating electricity consumption for all users", e);
+            throw e;
+        }
+    }
+
+    //carbon footprint for all users
+    //count the number of electricityMeters , waterMeters, THL and solarPanels
+    @Transactional
+    public DeviceCountDto countDevicesByType() {
+        try {
+            LOGGER.info("Counting devices by type");
+
+            // Initialize counts
+            Long electricityMeterCount = (Long) entityManager.createQuery("SELECT COUNT(e) FROM ElectricityMeter e").getSingleResult();
+            Long waterMeterCount = (Long) entityManager.createQuery("SELECT COUNT(w) FROM WaterMeter w").getSingleResult();
+            Long thlCount = (Long) entityManager.createQuery("SELECT COUNT(t) FROM THL t").getSingleResult();
+            Long solarPanel= (Long) entityManager.createQuery("SELECT COUNT(s) FROM SolarPanel s").getSingleResult();
+                // Calculate total device count
+            Long deviceCount = electricityMeterCount + waterMeterCount + thlCount ;
+
+            // Create DeviceCountDto object and populate with counts
+            DeviceCountDto deviceCountDto = new DeviceCountDto();
+            deviceCountDto.setElectricityMeterCount(electricityMeterCount);
+            deviceCountDto.setWaterMeterCount(waterMeterCount);
+            deviceCountDto.setThlCount(thlCount);
+            deviceCountDto.setDeviceCount(deviceCount);
+            deviceCountDto.setSolarPanelCount(solarPanel);
+
+            LOGGER.info("Devices count by type: {}", deviceCountDto);
+            return deviceCountDto;
+        } catch (Exception e) {
+            LOGGER.error("Error counting devices by type", e);
             throw e;
         }
     }
