@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GreenTotalConsumptionWmEmCo2Sp {
+    private String devicename;
     private double totalenergyConsumtion;
     private double totalwaterConsumtion;
     private double totalco2Emission;
@@ -17,6 +18,8 @@ public class GreenTotalConsumptionWmEmCo2Sp {
     @Override
     public String toString() {
         return "GreenTotalConsumptionWmEmCo2Sp{" +
+                "deviceName='" + devicename + '\'' +
+
                 "totalEnergyConsumption=" + totalenergyConsumtion + " kWh" +
                 ", totalWaterConsumption=" + totalwaterConsumtion + " m3" +
                 ", totalCo2Emission=" + totalco2Emission + " kg/CO2" +
