@@ -36,13 +36,36 @@ pipeline {
         }
 
         stage('Check Prometheus and Grafana') {
-            echo 'Prometheus and grafana works !'
+            steps {
+        stage('Check Prometheus and Grafana') {
+            steps {
+                script {
+                    // Check if Prometheus is reachable
+                    def prometheusStatus = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://172.16.1.208:9090', returnStdout: true).trim()
+                    if (prometheusStatus == '200') {
+                        echo 'Prometheus is reachable and works!'
+                    } else {
+                        error 'Prometheus is not reachable!'
+                    }
 
+                    // Check if Grafana is reachable
+                    def grafanaStatus = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://172.16.1.208:3000', returnStdout: true).trim()
+                    if (grafanaStatus == '200') {
+                        echo 'Grafana is reachable and works!'
+                    } else {
+                        error 'Grafana is not reachable!'
+                    }
+                }
+            }
+
+            }
         }
 
         stage('Monitor Application') {
-            echo 'Prometheus and grafana works !'
-
+            steps {
+                // If there are no monitoring steps, remove this script block
+                echo 'Monitoring steps could be added here.'
+            }
         }
     }
 
