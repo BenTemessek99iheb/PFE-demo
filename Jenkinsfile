@@ -35,11 +35,23 @@ pipeline {
             }
         }
 
-        stage('Start Prometheus and Grafana') {
+        stage('Check Prometheus and Grafana') {
             steps {
                 script {
-                    sh 'docker run -d --name prometheus -p 9090:9090 prom/prometheus:latest'
-                    sh 'docker run -d --name grafana -p 3000:3000 grafana/grafana:latest'
+                    def prometheusStatus = sh(script: 'docker ps --filter "name=prometheus" --format "{{.Status}}"', returnStdout: true).trim()
+                    def grafanaStatus = sh(script: 'docker ps --filter "name=grafana" --format "{{.Status}}"', returnStdout: true).trim()
+
+                    if (prometheusStatus) {
+                        echo "Prometheus is running: ${prometheusStatus}"
+                    } else {
+                        echo "Prometheus is not running."
+                    }
+
+                    if (grafanaStatus) {
+                        echo "Grafana is running: ${grafanaStatus}"
+                    } else {
+                        echo "Grafana is not running."
+                    }
                 }
             }
         }
