@@ -55,9 +55,9 @@ pipeline {
                     }
                 }
             }
-
-            }
         }
+
+
 
         stage('Monitor Application') {
             steps {
