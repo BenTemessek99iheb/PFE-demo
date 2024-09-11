@@ -39,8 +39,8 @@ pipeline {
         stage('Start Prometheus and Grafana') {
             steps {
                 script {
-                    //sh 'docker run -d --name prometheus -p 9090:9090 prom/prometheus:latest'
-                  //  sh 'docker run -d --name grafana -p 3000:3000 grafana/grafana:latest'
+                    sh 'docker run -d --name prometheus -p 9090:9090 prom/prometheus:latest'
+                    sh 'docker run -d --name grafana -p 3000:3000 grafana/grafana:latest'
                 }
             }
         }
