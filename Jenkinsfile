@@ -5,7 +5,7 @@ pipeline {
         maven 'Maven 3.9.8'
     }
 
-    stages {
+        stages {
         stage('Checkout') {
             steps {
                 checkout scm
