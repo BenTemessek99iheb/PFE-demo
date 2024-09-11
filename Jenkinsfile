@@ -5,7 +5,7 @@ pipeline {
         maven 'Maven 3.9.8'
     }
 
-        stages {
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm
@@ -17,13 +17,12 @@ pipeline {
                 sh 'mvn clean test'
             }
         }
-       stages {
-           stage('Check Docker') {
-               steps {
-                   sh 'docker --version'
-               }
-           }
-       }
+
+        stage('Check Docker') {
+            steps {
+                sh 'docker --version'
+            }
+        }
 
         stage('SonarQube Analysis') {
             steps {
