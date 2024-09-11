@@ -37,8 +37,6 @@ pipeline {
 
         stage('Check Prometheus and Grafana') {
             steps {
-        stage('Check Prometheus and Grafana') {
-            steps {
                 script {
                     // Check if Prometheus is reachable
                     def prometheusStatus = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://172.16.1.208:9090', returnStdout: true).trim()
