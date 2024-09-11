@@ -102,7 +102,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # Copy the application JAR file to the container
-COPY target/ioit-dashboard.jar /app/ioit-dashboard.jar
+COPY target/ioit-dashboard-1.0.0-SNAPSHOT.jar /app/ioit-dashboard.jar
 
 # Expose the application's port
 EXPOSE 8081
