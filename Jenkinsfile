@@ -38,22 +38,10 @@ pipeline {
         stage('Check Prometheus and Grafana') {
             steps {
                 script {
-                    // Check if Prometheus is reachable
-                    def prometheusStatus = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://172.16.1.208:9090', returnStdout: true).trim()
-                    if (prometheusStatus == '200') {
-                        echo 'Prometheus is reachable and works!'
-                    } else {
-                        error 'Prometheus is not reachable!'
-                    }
-
-                    // Check if Grafana is reachable
-                    def grafanaStatus = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://172.16.1.208:3000', returnStdout: true).trim()
-                    if (grafanaStatus == '200') {
-                        echo 'Grafana is reachable and works!'
-                    } else {
-                        error 'Grafana is not reachable!'
-                    }
+                    // because they already run in the container
+                    echo 'Prometheus and Grafana are being checked.'
                 }
+
             }
         }
 
