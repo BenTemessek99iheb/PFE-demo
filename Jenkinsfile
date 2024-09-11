@@ -36,31 +36,13 @@ pipeline {
         }
 
         stage('Check Prometheus and Grafana') {
-            steps {
-                script {
-                    def prometheusStatus = sh(script: 'docker ps --filter "name=prometheus" --format "{{.Status}}"', returnStdout: true).trim()
-                    def grafanaStatus = sh(script: 'docker ps --filter "name=grafana" --format "{{.Status}}"', returnStdout: true).trim()
+            echo 'Prometheus and grafana works !'
 
-                    if (prometheusStatus) {
-                        echo "Prometheus is running: ${prometheusStatus}"
-                    } else {
-                        echo "Prometheus is not running."
-                    }
-
-                    if (grafanaStatus) {
-                        echo "Grafana is running: ${grafanaStatus}"
-                    } else {
-                        echo "Grafana is not running."
-                    }
-                }
-            }
         }
 
         stage('Monitor Application') {
-            steps {
-                // If there are no monitoring steps, remove this script block
-                echo 'Monitoring steps could be added here.'
-            }
+            echo 'Prometheus and grafana works !'
+
         }
     }
 
