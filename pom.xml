@@ -64,10 +64,7 @@
             <artifactId>spring-data-commons</artifactId>
             <version>2.5.6</version>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-openapi</artifactId>
-        </dependency>
+
         <!-- PostgreSQL dependency -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -136,8 +133,6 @@
                     <execution>
                         <goals>
                             <goal>build</goal>
-                            <goal>native</goal> <!-- Use this for native builds -->
-
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
                         </goals>
